@@ -1,0 +1,16 @@
+{
+  "appId": "com.jayyvora.texttosql",
+  "appName": "Text to SQL",
+  "webDir": "www",
+  "server": {
+    "allowNavigation": [
+      "https://jayyvora-text-to-sql-app.hf.space",
+      "https://*.hf.space"
+    ],
+    "cleartext": false
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "preferredContentMode": "mobile"
+  }
+}
