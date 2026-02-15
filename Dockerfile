@@ -21,14 +21,12 @@ COPY README.md .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create database
-RUN python create_database.py
-
 # Expose Streamlit port
 EXPOSE 7860
 
-# Start Ollama service and pull model, then run Streamlit
-CMD ollama serve & \
+# Start Ollama service, create database, pull model, then run Streamlit
+CMD python create_database.py && \
+    ollama serve & \
     sleep 5 && \
     ollama pull llama3 && \
     streamlit run app.py --server.port=7860 --server.address=0.0.0.0
