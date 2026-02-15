@@ -1,0 +1,15 @@
+venv/
+venv312/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.db
+.git/
+.gitignore
+.DS_Store
+*.swp
+*.swo
+.vscode/
+.idea/
