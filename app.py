@@ -75,7 +75,8 @@ def init_llm():
                     max_new_tokens=200,
                     temperature=0.01,
                     huggingfacehub_api_token=hf_token,
-                    timeout=90
+                    timeout=90,
+                    endpoint_url=f"https://router.huggingface.co/models/{model_id}"
                 )
                 st.success(f"✅ Using {model_name}")
                 return llm
