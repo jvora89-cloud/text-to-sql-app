@@ -1,219 +1,199 @@
 import sqlite3
 
 def create_database():
-    """Create comprehensive multi-industry business database"""
+    """Create database with top companies from Best Companies lists"""
     conn = sqlite3.connect('business.db')
     cursor = conn.cursor()
 
-    # Create Companies table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Companies (
-            CompanyID INTEGER PRIMARY KEY,
-            CompanyName TEXT NOT NULL,
-            Industry TEXT NOT NULL,
-            Location TEXT
-        )
-    ''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Companies (
+        CompanyID INTEGER PRIMARY KEY, CompanyName TEXT NOT NULL, Industry TEXT NOT NULL, Location TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Departments (
+        DepartmentID INTEGER PRIMARY KEY, DepartmentName TEXT NOT NULL, CompanyID INTEGER,
+        FOREIGN KEY (CompanyID) REFERENCES Companies(CompanyID))''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Employees (
+        EmployeeID INTEGER PRIMARY KEY, Name TEXT NOT NULL, Occupation TEXT NOT NULL,
+        DepartmentID INTEGER, Salary REAL, HireDate TEXT,
+        FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID))''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Customers (
+        CustomerID INTEGER PRIMARY KEY, CustomerName TEXT NOT NULL, Industry TEXT, ContactEmail TEXT)''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Products (
+        ProductID INTEGER PRIMARY KEY, ProductName TEXT NOT NULL, Category TEXT NOT NULL,
+        Price REAL, CompanyID INTEGER, FOREIGN KEY (CompanyID) REFERENCES Companies(CompanyID))''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Projects (
+        ProjectID INTEGER PRIMARY KEY, ProjectName TEXT NOT NULL, CompanyID INTEGER,
+        Budget REAL, StartDate TEXT, EndDate TEXT, Status TEXT,
+        FOREIGN KEY (CompanyID) REFERENCES Companies(CompanyID))''')
+    cursor.execute('''CREATE TABLE IF NOT EXISTS Transactions (
+        TransactionID INTEGER PRIMARY KEY, EmployeeID INTEGER, CustomerID INTEGER,
+        ProductID INTEGER, TransactionDate TEXT, Amount REAL,
+        FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID),
+        FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
+        FOREIGN KEY (ProductID) REFERENCES Products(ProductID))''')
 
-    # Create Departments table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Departments (
-            DepartmentID INTEGER PRIMARY KEY,
-            DepartmentName TEXT NOT NULL,
-            CompanyID INTEGER,
-            FOREIGN KEY (CompanyID) REFERENCES Companies(CompanyID)
-        )
-    ''')
-
-    # Create Employees table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Employees (
-            EmployeeID INTEGER PRIMARY KEY,
-            Name TEXT NOT NULL,
-            Occupation TEXT NOT NULL,
-            DepartmentID INTEGER,
-            Salary REAL,
-            HireDate TEXT,
-            FOREIGN KEY (DepartmentID) REFERENCES Departments(DepartmentID)
-        )
-    ''')
-
-    # Create Customers table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Customers (
-            CustomerID INTEGER PRIMARY KEY,
-            CustomerName TEXT NOT NULL,
-            Industry TEXT,
-            ContactEmail TEXT
-        )
-    ''')
-
-    # Create Products table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Products (
-            ProductID INTEGER PRIMARY KEY,
-            ProductName TEXT NOT NULL,
-            Category TEXT NOT NULL,
-            Price REAL,
-            CompanyID INTEGER,
-            FOREIGN KEY (CompanyID) REFERENCES Companies(CompanyID)
-        )
-    ''')
-
-    # Create Projects table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Projects (
-            ProjectID INTEGER PRIMARY KEY,
-            ProjectName TEXT NOT NULL,
-            CompanyID INTEGER,
-            Budget REAL,
-            StartDate TEXT,
-            EndDate TEXT,
-            Status TEXT,
-            FOREIGN KEY (CompanyID) REFERENCES Companies(CompanyID)
-        )
-    ''')
-
-    # Create Transactions table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Transactions (
-            TransactionID INTEGER PRIMARY KEY,
-            EmployeeID INTEGER,
-            CustomerID INTEGER,
-            ProductID INTEGER,
-            TransactionDate TEXT,
-            Amount REAL,
-            FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID),
-            FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
-            FOREIGN KEY (ProductID) REFERENCES Products(ProductID)
-        )
-    ''')
-
-    # Insert Companies
+    # Top Companies - Best Companies to Own 2026
     companies = [
-        (1, 'TechVision Inc', 'Technology', 'San Francisco'),
-        (2, 'HealthPlus Medical', 'Healthcare', 'New York'),
-        (3, 'Global Finance Corp', 'Finance', 'Chicago'),
-        (4, 'EduLearn Academy', 'Education', 'Boston'),
-        (5, 'RetailMax Stores', 'Retail', 'Los Angeles'),
-        (6, 'BuildRight Construction', 'Construction', 'Houston'),
-        (7, 'GreenEnergy Solutions', 'Energy', 'Austin'),
-        (8, 'FoodDelight Restaurants', 'Hospitality', 'Miami')
+        # Technology Giants
+        (1, 'Apple Inc', 'Technology', 'Cupertino, CA'),
+        (2, 'Microsoft Corporation', 'Technology', 'Redmond, WA'),
+        (3, 'NVIDIA Corporation', 'Technology', 'Santa Clara, CA'),
+        (4, 'Alphabet Inc (Google)', 'Technology', 'Mountain View, CA'),
+        (5, 'Meta Platforms', 'Technology', 'Menlo Park, CA'),
+        (6, 'Amazon.com Inc', 'E-commerce/Technology', 'Seattle, WA'),
+        (7, 'Netflix Inc', 'Technology/Entertainment', 'Los Gatos, CA'),
+        (8, 'Adobe Inc', 'Software', 'San Jose, CA'),
+        (9, 'Salesforce Inc', 'Cloud Software', 'San Francisco, CA'),
+        (10, 'Oracle Corporation', 'Software/Cloud', 'Austin, TX'),
+        
+        # Financial Services
+        (11, 'JPMorgan Chase', 'Banking', 'New York, NY'),
+        (12, 'Bank of America', 'Banking', 'Charlotte, NC'),
+        (13, 'Visa Inc', 'Financial Services', 'San Francisco, CA'),
+        (14, 'Mastercard Inc', 'Financial Services', 'Purchase, NY'),
+        (15, 'Goldman Sachs', 'Investment Banking', 'New York, NY'),
+        (16, 'Morgan Stanley', 'Investment Banking', 'New York, NY'),
+        (17, 'American Express', 'Financial Services', 'New York, NY'),
+        (18, 'PayPal Holdings', 'Fintech', 'San Jose, CA'),
+        (19, 'Berkshire Hathaway', 'Conglomerate', 'Omaha, NE'),
+        (20, 'Charles Schwab', 'Financial Services', 'Westlake, TX'),
+        
+        # Healthcare
+        (21, 'UnitedHealth Group', 'Healthcare', 'Minnetonka, MN'),
+        (22, 'Johnson & Johnson', 'Pharmaceuticals', 'New Brunswick, NJ'),
+        (23, 'Pfizer Inc', 'Pharmaceuticals', 'New York, NY'),
+        (24, 'AbbVie Inc', 'Pharmaceuticals', 'North Chicago, IL'),
+        (25, 'Moderna Inc', 'Biotechnology', 'Cambridge, MA'),
+        (26, 'CVS Health', 'Healthcare', 'Woonsocket, RI'),
+        
+        # Retail
+        (27, 'Walmart Inc', 'Retail', 'Bentonville, AR'),
+        (28, 'Costco Wholesale', 'Retail', 'Issaquah, WA'),
+        (29, 'Target Corporation', 'Retail', 'Minneapolis, MN'),
+        (30, 'Home Depot', 'Retail', 'Atlanta, GA'),
+        (31, 'Lowes Companies', 'Retail', 'Mooresville, NC'),
+        
+        # Consumer Brands
+        (32, 'Procter & Gamble', 'Consumer Goods', 'Cincinnati, OH'),
+        (33, 'Coca-Cola Company', 'Beverages', 'Atlanta, GA'),
+        (34, 'PepsiCo Inc', 'Food & Beverage', 'Purchase, NY'),
+        (35, 'Nike Inc', 'Apparel', 'Beaverton, OR'),
+        (36, 'Starbucks Corporation', 'Restaurants', 'Seattle, WA'),
+        (37, 'McDonald Corporation', 'Restaurants', 'Chicago, IL'),
+        
+        # Automotive & Energy
+        (38, 'Tesla Inc', 'Automotive/Energy', 'Austin, TX'),
+        (39, 'Ford Motor Company', 'Automotive', 'Dearborn, MI'),
+        (40, 'General Motors', 'Automotive', 'Detroit, MI'),
+        (41, 'ExxonMobil', 'Energy', 'Irving, TX'),
+        (42, 'Chevron Corporation', 'Energy', 'San Ramon, CA'),
+        
+        # Telecom & Media
+        (43, 'Verizon Communications', 'Telecommunications', 'New York, NY'),
+        (44, 'AT&T Inc', 'Telecommunications', 'Dallas, TX'),
+        (45, 'Comcast Corporation', 'Media/Telecom', 'Philadelphia, PA'),
+        (46, 'Walt Disney Company', 'Entertainment', 'Burbank, CA'),
+        
+        # Industrial & Aerospace
+        (47, 'Boeing Company', 'Aerospace', 'Arlington, VA'),
+        (48, 'Lockheed Martin', 'Aerospace/Defense', 'Bethesda, MD'),
+        (49, 'Caterpillar Inc', 'Industrial', 'Deerfield, IL'),
+        (50, 'Deere & Company', 'Agricultural Equipment', 'Moline, IL')
     ]
     cursor.executemany('INSERT OR IGNORE INTO Companies VALUES (?, ?, ?, ?)', companies)
 
-    # Insert Departments
+    # Sample Departments
     departments = [
-        (1, 'Engineering', 1), (2, 'Sales', 1), (3, 'Marketing', 1),
-        (4, 'Medical Staff', 2), (5, 'Administration', 2),
-        (6, 'Investment Banking', 3), (7, 'Risk Management', 3),
-        (8, 'Teaching', 4), (9, 'Curriculum Development', 4),
-        (10, 'Store Operations', 5), (11, 'Supply Chain', 5),
-        (12, 'Project Management', 6), (13, 'Architecture', 6),
-        (14, 'Research', 7), (15, 'Operations', 7),
-        (16, 'Kitchen', 8), (17, 'Customer Service', 8)
+        (1, 'Engineering', 1), (2, 'Product', 1), (3, 'Retail', 1),
+        (4, 'Cloud Services', 2), (5, 'Azure', 2), (6, 'Sales', 2),
+        (7, 'AI Research', 3), (8, 'GPU Engineering', 3),
+        (9, 'Search', 4), (10, 'YouTube', 4), (11, 'Cloud', 4),
+        (12, 'Reality Labs', 5), (13, 'Instagram', 5),
+        (14, 'AWS', 6), (15, 'Prime', 6), (16, 'Logistics', 6),
+        (17, 'Content', 7), (18, 'Streaming Tech', 7),
+        (19, 'Creative Cloud', 8), (20, 'Marketing', 8),
+        (21, 'CRM Platform', 9), (22, 'Sales Operations', 9),
+        (23, 'Investment Banking', 11), (24, 'Trading', 11),
+        (25, 'Network Infrastructure', 13), (26, 'Fraud Prevention', 13),
+        (27, 'Drug Development', 22), (28, 'Clinical Trials', 22),
+        (29, 'Store Operations', 27), (30, 'Supply Chain', 27)
     ]
     cursor.executemany('INSERT OR IGNORE INTO Departments VALUES (?, ?, ?)', departments)
 
-    # Insert Employees with diverse occupations
+    # Sample Employees (CEOs and key personnel)
     employees = [
-        (1, 'Alice Johnson', 'Software Engineer', 1, 120000, '2020-01-15'),
-        (2, 'Bob Smith', 'Sales Manager', 2, 95000, '2019-06-20'),
-        (3, 'Carol White', 'Marketing Director', 3, 110000, '2018-03-10'),
-        (4, 'Dr. David Brown', 'Surgeon', 4, 350000, '2015-09-01'),
-        (5, 'Emma Davis', 'Nurse', 4, 75000, '2021-02-14'),
-        (6, 'Frank Wilson', 'Investment Banker', 6, 180000, '2017-05-05'),
-        (7, 'Grace Lee', 'Financial Analyst', 7, 85000, '2020-11-30'),
-        (8, 'Henry Garcia', 'High School Teacher', 8, 65000, '2016-08-22'),
-        (9, 'Iris Martinez', 'Curriculum Designer', 9, 72000, '2019-01-10'),
-        (10, 'Jack Taylor', 'Store Manager', 10, 68000, '2018-07-15'),
-        (11, 'Kate Anderson', 'Supply Chain Analyst', 11, 78000, '2020-04-01'),
-        (12, 'Leo Thomas', 'Project Manager', 12, 95000, '2017-12-05'),
-        (13, 'Maria Rodriguez', 'Architect', 13, 105000, '2019-09-18'),
-        (14, 'Nathan Clark', 'Research Scientist', 14, 92000, '2021-03-22'),
-        (15, 'Olivia Lewis', 'Operations Manager', 15, 88000, '2018-11-11'),
-        (16, 'Paul Walker', 'Executive Chef', 16, 82000, '2017-06-30'),
-        (17, 'Quinn Hall', 'Restaurant Manager', 17, 70000, '2019-08-14'),
-        (18, 'Rachel Young', 'Data Scientist', 1, 135000, '2021-05-20'),
-        (19, 'Sam King', 'DevOps Engineer', 1, 115000, '2020-02-28'),
-        (20, 'Tina Wright', 'Account Executive', 2, 87000, '2019-10-12')
+        (1, 'Tim Cook', 'CEO', 1, 3000000, '2011-08-24'),
+        (2, 'Jeff Williams', 'COO', 1, 1500000, '1998-01-01'),
+        (3, 'Satya Nadella', 'CEO', 4, 2500000, '2014-02-04'),
+        (4, 'Amy Hood', 'CFO', 4, 1200000, '2013-05-01'),
+        (5, 'Jensen Huang', 'CEO', 7, 2600000, '1993-04-05'),
+        (6, 'Sundar Pichai', 'CEO', 9, 2800000, '2004-04-01'),
+        (7, 'Mark Zuckerberg', 'CEO', 12, 1, '2004-02-01'),
+        (8, 'Andy Jassy', 'CEO', 14, 2100000, '1997-01-01'),
+        (9, 'Reed Hastings', 'Co-CEO', 17, 1800000, '1997-08-29'),
+        (10, 'Shantanu Narayen', 'CEO', 19, 1700000, '2007-12-01'),
+        (11, 'Marc Benioff', 'CEO', 21, 1900000, '1999-03-01'),
+        (12, 'Jamie Dimon', 'CEO', 23, 3500000, '2005-12-31'),
+        (13, 'Brian Moynihan', 'CEO', 24, 2700000, '2010-01-01'),
+        (14, 'Warren Buffett', 'CEO', 19, 100000, '1970-05-10'),
+        (15, 'Andrew Witty', 'CEO', 21, 2400000, '2021-02-01'),
+        (16, 'Albert Bourla', 'CEO', 23, 2200000, '2019-01-01'),
+        (17, 'Doug McMillon', 'CEO', 29, 2200000, '2014-02-01'),
+        (18, 'Ron Vachris', 'CEO', 28, 1500000, '2024-01-01'),
+        (19, 'Elon Musk', 'CEO', 38, 5000000, '2008-10-01'),
+        (20, 'Mary Barra', 'CEO', 40, 2800000, '2014-01-15'),
+        (21, 'Hans Vestberg', 'CEO', 43, 1900000, '2018-08-01'),
+        (22, 'David Solomon', 'CEO', 15, 3100000, '2018-10-01'),
+        (23, 'Howard Schultz', 'Chairman', 36, 1200000, '1987-06-01'),
+        (24, 'Bob Iger', 'CEO', 46, 2700000, '2005-10-01'),
+        (25, 'David Calhoun', 'CEO', 47, 2600000, '2020-01-13')
     ]
     cursor.executemany('INSERT OR IGNORE INTO Employees VALUES (?, ?, ?, ?, ?, ?)', employees)
 
-    # Insert Customers
+    # Sample Customers
     customers = [
-        (1, 'Acme Corporation', 'Manufacturing', 'contact@acme.com'),
-        (2, 'Global Tech Partners', 'Technology', 'info@globaltech.com'),
-        (3, 'Retail Solutions Inc', 'Retail', 'sales@retailsol.com'),
-        (4, 'Healthcare Systems', 'Healthcare', 'admin@healthsys.com'),
-        (5, 'Education First', 'Education', 'contact@edufirst.com'),
-        (6, 'City Construction Co', 'Construction', 'projects@cityconstruct.com'),
-        (7, 'Energy Investors Ltd', 'Finance', 'invest@energyinv.com'),
-        (8, 'Food Services Group', 'Hospitality', 'orders@foodservices.com')
+        (1, 'Fortune 500 Enterprise', 'Technology', 'enterprise@fortune.com'),
+        (2, 'Global Retail Chain', 'Retail', 'procurement@retail.com'),
+        (3, 'Healthcare Networks Inc', 'Healthcare', 'it@healthcare.com'),
+        (4, 'Financial Group LLC', 'Finance', 'ops@fingroup.com'),
+        (5, 'Manufacturing Corp', 'Manufacturing', 'supply@mfg.com')
     ]
     cursor.executemany('INSERT OR IGNORE INTO Customers VALUES (?, ?, ?, ?)', customers)
 
-    # Insert Products
+    # Sample Products
     products = [
-        (1, 'Cloud Platform Subscription', 'Software', 5000, 1),
-        (2, 'AI Analytics Tool', 'Software', 3500, 1),
-        (3, 'Medical Equipment Package', 'Medical', 25000, 2),
-        (4, 'Patient Care System', 'Software', 15000, 2),
-        (5, 'Investment Portfolio', 'Financial Service', 10000, 3),
-        (6, 'Risk Assessment Service', 'Financial Service', 8000, 3),
-        (7, 'Online Course Platform', 'Education', 2000, 4),
-        (8, 'Learning Management System', 'Software', 4500, 4),
-        (9, 'Retail POS System', 'Hardware', 3000, 5),
-        (10, 'Inventory Management Software', 'Software', 2500, 5),
-        (11, 'Construction Management Software', 'Software', 6000, 6),
-        (12, 'Solar Panel Installation', 'Energy', 20000, 7),
-        (13, 'Energy Audit Service', 'Service', 3000, 7),
-        (14, 'Catering Package', 'Food Service', 5000, 8),
-        (15, 'Restaurant POS System', 'Hardware', 2800, 8)
+        (1, 'iPhone 15 Pro', 'Consumer Electronics', 1199, 1),
+        (2, 'MacBook Pro M3', 'Computing', 2499, 1),
+        (3, 'Microsoft 365 Enterprise', 'Software', 22, 2),
+        (4, 'Azure AI Services', 'Cloud/AI', 10000, 2),
+        (5, 'NVIDIA H100 GPU', 'Hardware', 30000, 3),
+        (6, 'Google Cloud Platform', 'Cloud Services', 8000, 4),
+        (7, 'AWS Enterprise Suite', 'Cloud Services', 15000, 6),
+        (8, 'Salesforce Platform', 'CRM Software', 5000, 9)
     ]
     cursor.executemany('INSERT OR IGNORE INTO Products VALUES (?, ?, ?, ?, ?)', products)
 
-    # Insert Projects
+    # Sample Projects
     projects = [
-        (1, 'Cloud Migration', 1, 500000, '2024-01-01', '2024-12-31', 'In Progress'),
-        (2, 'Hospital Expansion', 2, 2000000, '2023-06-01', '2025-06-30', 'In Progress'),
-        (3, 'Digital Banking Platform', 3, 1500000, '2024-02-01', '2024-11-30', 'In Progress'),
-        (4, 'New Curriculum Rollout', 4, 300000, '2024-01-15', '2024-08-15', 'Completed'),
-        (5, 'Store Modernization', 5, 800000, '2024-03-01', '2024-09-30', 'In Progress'),
-        (6, 'Office Complex Build', 6, 5000000, '2023-09-01', '2025-12-31', 'In Progress'),
-        (7, 'Solar Farm Development', 7, 3000000, '2024-01-01', '2025-06-30', 'In Progress'),
-        (8, 'Restaurant Chain Expansion', 8, 1200000, '2024-04-01', '2024-12-31', 'In Progress')
+        (1, 'Vision Pro Expansion', 1, 10000000, '2024-01-01', '2025-12-31', 'In Progress'),
+        (2, 'AI Copilot Integration', 2, 25000000, '2023-11-01', '2025-06-30', 'In Progress'),
+        (3, 'AI Chip Development', 3, 50000000, '2023-01-01', '2025-12-31', 'In Progress'),
+        (4, 'Gemini Ultra Launch', 4, 30000000, '2023-12-01', '2024-12-31', 'In Progress'),
+        (5, 'EV Battery Innovation', 38, 3000000000, '2023-01-01', '2026-12-31', 'In Progress')
     ]
     cursor.executemany('INSERT OR IGNORE INTO Projects VALUES (?, ?, ?, ?, ?, ?, ?)', projects)
 
-    # Insert Transactions
+    # Sample Transactions
     transactions = [
-        (1, 1, 2, 1, '2024-01-15', 5000),
-        (2, 2, 2, 2, '2024-01-20', 3500),
-        (3, 4, 4, 3, '2024-02-01', 25000),
-        (4, 5, 4, 4, '2024-02-15', 15000),
-        (5, 6, 7, 5, '2024-03-01', 10000),
-        (6, 7, 7, 6, '2024-03-10', 8000),
-        (7, 8, 5, 7, '2024-03-15', 2000),
-        (8, 9, 5, 8, '2024-04-01', 4500),
-        (9, 10, 3, 9, '2024-04-10', 3000),
-        (10, 11, 3, 10, '2024-04-20', 2500),
-        (11, 12, 6, 11, '2024-05-01', 6000),
-        (12, 14, 7, 12, '2024-05-15', 20000),
-        (13, 15, 7, 13, '2024-06-01', 3000),
-        (14, 16, 8, 14, '2024-06-10', 5000),
-        (15, 17, 8, 15, '2024-06-20', 2800),
-        (16, 1, 1, 1, '2024-07-01', 5000),
-        (17, 2, 2, 2, '2024-07-15', 3500),
-        (18, 18, 2, 1, '2024-08-01', 5000),
-        (19, 19, 1, 2, '2024-08-10', 3500),
-        (20, 20, 3, 9, '2024-09-01', 3000)
+        (1, 2, 1, 1, '2024-01-15', 1199000),
+        (2, 4, 1, 3, '2024-02-01', 220000),
+        (3, 5, 1, 5, '2024-03-01', 300000),
+        (4, 6, 2, 6, '2024-04-01', 800000),
+        (5, 8, 1, 7, '2024-05-01', 1500000)
     ]
     cursor.executemany('INSERT OR IGNORE INTO Transactions VALUES (?, ?, ?, ?, ?, ?)', transactions)
 
     conn.commit()
     conn.close()
-    print("✓ Comprehensive multi-industry database created successfully!")
+    print("✓ Database with 50 top companies created!")
 
 if __name__ == "__main__":
     create_database()
