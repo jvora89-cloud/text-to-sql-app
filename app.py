@@ -47,38 +47,34 @@ def init_llm():
             pass
 
     if not hf_token:
-        st.warning("⚠️ No HF token found. The app may not work properly.")
-        st.info("On Hugging Face Spaces, the token should be automatically available.")
+        st.warning("⚠️ No HF token found. Trying with public API...")
 
-    try:
-        llm = HuggingFaceEndpoint(
-            repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
-            task="text-generation",
-            max_new_tokens=256,
-            temperature=0.01,
-            top_p=0.95,
-            huggingfacehub_api_token=hf_token,
-            timeout=120
-        )
-        return llm
-    except Exception as e:
-        st.error(f"LLM initialization error: {e}")
-        st.info("Trying alternative model...")
+    # Try multiple models in order of preference
+    models_to_try = [
+        ("mistralai/Mistral-7B-Instruct-v0.2", "Mistral-7B"),
+        ("HuggingFaceH4/zephyr-7b-beta", "Zephyr-7B"),
+        ("microsoft/Phi-3-mini-4k-instruct", "Phi-3-mini"),
+    ]
 
-        # Fallback to a different model
+    for model_id, model_name in models_to_try:
         try:
-            llm = HuggingFaceEndpoint(
-                repo_id="mistralai/Mistral-7B-Instruct-v0.2",
-                task="text-generation",
-                max_new_tokens=256,
-                temperature=0.01,
-                huggingfacehub_api_token=hf_token,
-                timeout=120
-            )
-            return llm
-        except Exception as e2:
-            st.error(f"Fallback also failed: {e2}")
-            return None
+            with st.spinner(f"Initializing {model_name}..."):
+                llm = HuggingFaceEndpoint(
+                    repo_id=model_id,
+                    task="text-generation",
+                    max_new_tokens=200,
+                    temperature=0.01,
+                    huggingfacehub_api_token=hf_token,
+                    timeout=60
+                )
+                st.success(f"✅ Using {model_name}")
+                return llm
+        except Exception as e:
+            st.warning(f"Could not load {model_name}: {str(e)[:80]}...")
+            continue
+
+    st.error("❌ All models failed. Please check HF Spaces status or try again later.")
+    return None
 
 # Create SQL query chain
 @st.cache_resource
