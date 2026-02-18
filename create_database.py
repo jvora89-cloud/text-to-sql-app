@@ -96,7 +96,28 @@ def create_database():
         (47, 'Boeing Company', 'Aerospace', 'Arlington, VA'),
         (48, 'Lockheed Martin', 'Aerospace/Defense', 'Bethesda, MD'),
         (49, 'Caterpillar Inc', 'Industrial', 'Deerfield, IL'),
-        (50, 'Deere & Company', 'Agricultural Equipment', 'Moline, IL')
+        (50, 'Deere & Company', 'Agricultural Equipment', 'Moline, IL'),        
+        # AI & Machine Learning Companies
+        (51, 'OpenAI', 'Artificial Intelligence', 'San Francisco, CA'),
+        (52, 'Anthropic', 'AI Safety/Research', 'San Francisco, CA'),
+        (53, 'DeepMind (Google)', 'AI Research', 'London, UK'),
+        (54, 'Hugging Face', 'AI/Machine Learning', 'New York, NY'),
+        (55, 'Scale AI', 'AI Data Platform', 'San Francisco, CA'),
+        (56, 'DataRobot', 'AI/ML Platform', 'Boston, MA'),
+        (57, 'C3.ai', 'Enterprise AI', 'Redwood City, CA'),
+        (58, 'UiPath', 'AI/RPA', 'New York, NY'),
+        (59, 'Databricks', 'Data & AI', 'San Francisco, CA'),
+        (60, 'Palantir Technologies', 'Big Data/AI', 'Denver, CO'),
+        (61, 'Cognizant', 'AI Consulting', 'Teaneck, NJ'),
+        (62, 'Accenture AI', 'AI Consulting', 'Dublin, Ireland'),
+        (63, 'IBM Watson', 'Enterprise AI', 'Armonk, NY'),
+        (64, 'Automattic', 'AI/WordPress', 'San Francisco, CA'),
+        (65, 'Cohere', 'AI Language Models', 'Toronto, Canada'),
+        (66, 'Stability AI', 'Generative AI', 'London, UK'),
+        (67, 'Midjourney', 'AI Image Generation', 'San Francisco, CA'),
+        (68, 'Jasper AI', 'AI Content', 'Austin, TX'),
+        (69, 'Synthesia', 'AI Video', 'London, UK'),
+        (70, 'Runway ML', 'AI Creative Tools', 'New York, NY')
     ]
     cursor.executemany('INSERT OR IGNORE INTO Companies VALUES (?, ?, ?, ?)', companies)
 
