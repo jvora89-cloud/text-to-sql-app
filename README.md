@@ -10,14 +10,14 @@ license: mit
 
 # Text-to-SQL App 🗃️
 
-A conversational database interface that translates natural language questions into SQL queries using Ollama, LangChain, and Streamlit.
+A conversational database interface that translates natural language questions into SQL queries using Hugging Face Inference API, LangChain, and Streamlit.
 
 ## Features
 
 - 🗣️ Ask questions in plain English
-- 🔍 Automatic SQL query generation using Llama 3
+- 🔍 Automatic SQL query generation using Mistral-7B-Instruct
 - 📊 View query results in real-time
-- 🔒 100% local execution (no external APIs)
+- ⚡ Fast inference using Hugging Face's serverless API
 - 💾 SQLite database with student grades
 
 ## How to Use
@@ -36,11 +36,18 @@ A conversational database interface that translates natural language questions i
 
 ## Tech Stack
 
-- **Ollama + Llama 3** - Local LLM for SQL generation
+- **Hugging Face Inference API + Mistral-7B** - LLM for SQL generation
 - **LangChain** - AI-to-database connector framework
 - **Streamlit** - Web application interface
 - **SQLite** - Embedded database
 
-## Note
+## Setup
 
-This Space uses Ollama with Llama 3 model running inside Docker. First startup may take a few minutes while the model downloads.
+This Space uses Hugging Face's Inference API with Meta-Llama-3-8B-Instruct model. When running on Hugging Face Spaces, authentication is handled automatically - no additional setup needed!
+
+### Local Development
+
+For local development:
+1. Get a Hugging Face token from https://huggingface.co/settings/tokens
+2. Create a `.env` file with: `HF_TOKEN=your_token_here`
+3. Run: `streamlit run app.py`

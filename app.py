@@ -1,9 +1,14 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
 from langchain_community.utilities import SQLDatabase
-from langchain_ollama import ChatOllama
+from langchain_huggingface import HuggingFaceEndpoint
 from langchain.chains import create_sql_query_chain
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -29,17 +34,43 @@ def init_database():
 # Initialize LLM
 @st.cache_resource
 def init_llm():
-    """Initialize Ollama LLM"""
+    """Initialize Hugging Face LLM"""
     try:
-        llm = ChatOllama(
-            model="llama3",
-            temperature=0  # Zero temperature for precise SQL generation
+        # Get HF token from environment or Streamlit secrets
+        # On HF Spaces, the token is automatically available via HUGGINGFACE_TOKEN
+        hf_token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or st.secrets.get("HF_TOKEN", None)
+
+        if not hf_token:
+            st.warning("No HF token found. Using public API (may have rate limits).")
+
+        llm = HuggingFaceEndpoint(
+            repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
+            task="text-generation",
+            max_new_tokens=256,
+            temperature=0.01,
+            top_p=0.95,
+            huggingfacehub_api_token=hf_token,
+            timeout=120
         )
         return llm
     except Exception as e:
         st.error(f"LLM initialization error: {e}")
-        st.info("Make sure Ollama is running and llama3 model is installed.")
-        return None
+        st.info("Trying alternative model...")
+
+        # Fallback to a different model
+        try:
+            llm = HuggingFaceEndpoint(
+                repo_id="mistralai/Mistral-7B-Instruct-v0.2",
+                task="text-generation",
+                max_new_tokens=256,
+                temperature=0.01,
+                huggingfacehub_api_token=hf_token,
+                timeout=120
+            )
+            return llm
+        except Exception as e2:
+            st.error(f"Fallback also failed: {e2}")
+            return None
 
 # Create SQL query chain
 @st.cache_resource
@@ -155,7 +186,7 @@ if db and llm:
 else:
     st.error("Failed to initialize the application. Please check:")
     st.markdown("""
-    1. Ollama is installed and running
-    2. Run `ollama pull llama3` to download the model
-    3. The database file exists (run `python create_database.py`)
+    1. HF_TOKEN is set in Space secrets (for authentication)
+    2. The database file exists (run `python create_database.py`)
+    3. Internet connection is available for HF Inference API
     """)
