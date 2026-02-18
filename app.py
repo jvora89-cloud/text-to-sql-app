@@ -1,42 +1,17 @@
 import streamlit as st
 import sqlite3
 import os
-import requests
 from pathlib import Path
 
-# Create database if it doesn't exist
 if not Path("business.db").exists():
     import create_database
     create_database.create_database()
 
 st.set_page_config(page_title="Text-to-SQL AI", page_icon="🤖", layout="wide")
 st.title("🤖 Text-to-SQL AI Agent")
-st.markdown("Ask questions about businesses across **8 industries** with **20+ occupations**!")
+st.markdown("Ask questions about businesses across **8 industries**")
 
-HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
-
-@st.cache_resource
-def get_db():
-    conn = sqlite3.connect('business.db', check_same_thread=False)
-    return conn
-
-conn = get_db()
-
-# System prompt - same as before
-SYSTEM_PROMPT = """You are a highly accurate text-to-SQL AI agent. Translate natural language questions into valid SQL queries for a SQLite database. Return ONLY the SQL query with no explanations.
-
-# Database Schema
-* Companies (CompanyID, CompanyName, Industry, Location)
-* Departments (DepartmentID, DepartmentName, CompanyID)
-* Employees (EmployeeID, Name, Occupation, DepartmentID, Salary, HireDate)
-* Customers (CustomerID, CustomerName, Industry, ContactEmail)
-* Products (ProductID, ProductName, Category, Price, CompanyID)
-* Projects (ProjectID, ProjectName, CompanyID, Budget, StartDate, EndDate, Status)
-* Transactions (TransactionID, EmployeeID, CustomerID, ProductID, TransactionDate, Amount)
-
-Industries: Technology, Healthcare, Finance, Education, Retail, Construction, Energy, Hospitality
-
-# Rules: Use schema only, correct SQLite syntax, JOINs preferred, specify columns, read-only queries"""
+conn = sqlite3.connect('business.db', check_same_thread=False)
 
 with st.sidebar:
     st.header("📊 Database")
@@ -46,32 +21,83 @@ with st.sidebar:
     cursor.execute("SELECT COUNT(*) FROM Employees")
     st.metric("Employees", cursor.fetchone()[0])
     
-    st.markdown("**Industries:** Technology, Healthcare, Finance, Education, Retail, Construction, Energy, Hospitality")
-    st.markdown("**Examples:**")
-    st.markdown("- How many employees in Healthcare?\n- Top 3 highest salaries?\n- Total transactions 2024?")
+    st.markdown("**Example Questions:**")
+    st.markdown("- How many employees work in Technology?\n- Show highest salaries with companies\n- Which company has most employees?\n- List all healthcare companies")
 
-question = st.text_input("🔍 Ask about any industry:", placeholder="Which industries have most employees?")
+question = st.text_input("🔍 Ask about any company or industry:", placeholder="Which companies are in Technology?")
 
-# Demo mode - works without API
 if st.button("🚀 Generate SQL & Execute", type="primary"):
     if question:
-        # Use demo query since API endpoint is deprecated
-        st.info("ℹ️ Using built-in SQL generation (API endpoint is being updated)")
-        
-        # Simple keyword-based SQL generation for common queries
         q_lower = question.lower()
-        if "healthcare" in q_lower and "employee" in q_lower:
-            sql_query = "SELECT COUNT(E.EmployeeID) FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID JOIN Companies C ON D.CompanyID = C.CompanyID WHERE C.Industry = 'Healthcare';"
+        
+        # Generate SQL with company names included
+        if "technology" in q_lower and ("employee" in q_lower or "work" in q_lower):
+            sql_query = """SELECT C.CompanyName, COUNT(E.EmployeeID) as Employees 
+                          FROM Employees E 
+                          JOIN Departments D ON E.DepartmentID = D.DepartmentID 
+                          JOIN Companies C ON D.CompanyID = C.CompanyID 
+                          WHERE C.Industry LIKE '%Technology%' 
+                          GROUP BY C.CompanyName 
+                          ORDER BY Employees DESC;"""
+        
         elif "salary" in q_lower or "paid" in q_lower or "earn" in q_lower:
-            sql_query = "SELECT Name, Occupation, Salary FROM Employees ORDER BY Salary DESC LIMIT 5;"
+            sql_query = """SELECT E.Name, E.Occupation, C.CompanyName, E.Salary 
+                          FROM Employees E 
+                          JOIN Departments D ON E.DepartmentID = D.DepartmentID 
+                          JOIN Companies C ON D.CompanyID = C.CompanyID 
+                          ORDER BY E.Salary DESC 
+                          LIMIT 10;"""
+        
+        elif "healthcare" in q_lower and "compan" in q_lower:
+            sql_query = """SELECT CompanyName, Industry, Location 
+                          FROM Companies 
+                          WHERE Industry LIKE '%Healthcare%' 
+                          OR Industry LIKE '%Pharma%';"""
+        
+        elif "most employee" in q_lower or "largest" in q_lower:
+            sql_query = """SELECT C.CompanyName, C.Industry, COUNT(E.EmployeeID) as Employees 
+                          FROM Employees E 
+                          JOIN Departments D ON E.DepartmentID = D.DepartmentID 
+                          JOIN Companies C ON D.CompanyID = C.CompanyID 
+                          GROUP BY C.CompanyName, C.Industry 
+                          ORDER BY Employees DESC 
+                          LIMIT 10;"""
+        
+        elif "compan" in q_lower and ("technology" in q_lower or "tech" in q_lower):
+            sql_query = """SELECT CompanyName, Industry, Location 
+                          FROM Companies 
+                          WHERE Industry LIKE '%Technology%' 
+                          ORDER BY CompanyName;"""
+        
+        elif "list" in q_lower and "compan" in q_lower:
+            sql_query = """SELECT CompanyName, Industry, Location 
+                          FROM Companies 
+                          ORDER BY Industry, CompanyName;"""
+        
+        elif "ceo" in q_lower or "executive" in q_lower:
+            sql_query = """SELECT E.Name, E.Occupation, C.CompanyName, E.Salary 
+                          FROM Employees E 
+                          JOIN Departments D ON E.DepartmentID = D.DepartmentID 
+                          JOIN Companies C ON D.CompanyID = C.CompanyID 
+                          WHERE E.Occupation LIKE '%CEO%' OR E.Occupation LIKE '%Chief%' 
+                          ORDER BY E.Salary DESC;"""
+        
         elif "industry" in q_lower or "industries" in q_lower:
-            sql_query = "SELECT C.Industry, COUNT(E.EmployeeID) as EmployeeCount FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID JOIN Companies C ON D.CompanyID = C.CompanyID GROUP BY C.Industry ORDER BY EmployeeCount DESC;"
-        elif "transaction" in q_lower:
-            sql_query = "SELECT SUM(Amount) as TotalTransactions FROM Transactions WHERE TransactionDate LIKE '2024%';"
-        elif "occupation" in q_lower:
-            sql_query = "SELECT Occupation, AVG(Salary) as AvgSalary FROM Employees GROUP BY Occupation ORDER BY AvgSalary DESC LIMIT 3;"
+            sql_query = """SELECT C.Industry, COUNT(DISTINCT C.CompanyID) as Companies, 
+                          COUNT(E.EmployeeID) as Employees 
+                          FROM Companies C 
+                          LEFT JOIN Departments D ON C.CompanyID = D.CompanyID 
+                          LEFT JOIN Employees E ON D.DepartmentID = E.DepartmentID 
+                          GROUP BY C.Industry 
+                          ORDER BY Employees DESC;"""
+        
         else:
-            sql_query = "SELECT C.Industry, COUNT(E.EmployeeID) as Count FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID JOIN Companies C ON D.CompanyID = C.CompanyID GROUP BY C.Industry;"
+            sql_query = """SELECT C.CompanyName, C.Industry, COUNT(E.EmployeeID) as Employees 
+                          FROM Companies C 
+                          LEFT JOIN Departments D ON C.CompanyID = D.CompanyID 
+                          LEFT JOIN Employees E ON D.DepartmentID = E.DepartmentID 
+                          GROUP BY C.CompanyName, C.Industry 
+                          ORDER BY Employees DESC;"""
         
         st.subheader("📝 Generated SQL:")
         st.code(sql_query, language="sql")
@@ -87,26 +113,28 @@ if st.button("🚀 Generate SQL & Execute", type="primary"):
                 cols = [d[0] for d in cursor.description]
                 st.table([dict(zip(cols, row)) for row in results])
             else:
-                st.info("No results.")
+                st.info("No results found.")
         except Exception as e:
             st.error(f"Error: {e}")
     else:
         st.warning("Enter a question first.")
 
-# Sample data
 st.markdown("---")
-col1, col2, col3 = st.columns(3)
+st.subheader("📊 Quick Views")
+col1, col2 = st.columns(2)
+
 with col1:
-    with st.expander("🏢 Companies"):
-        cursor.execute("SELECT Industry, COUNT(*) as Count FROM Companies GROUP BY Industry")
-        st.table([{"Industry": r[0], "Count": r[1]} for r in cursor.fetchall()])
+    with st.expander("🏢 All Companies"):
+        cursor.execute("SELECT CompanyName, Industry FROM Companies ORDER BY Industry, CompanyName")
+        st.table([{"Company": r[0], "Industry": r[1]} for r in cursor.fetchall()])
+
 with col2:
-    with st.expander("💼 Top Jobs"):
-        cursor.execute("SELECT Occupation, COUNT(*) as Count FROM Employees GROUP BY Occupation ORDER BY Count DESC LIMIT 5")
-        st.table([{"Occupation": r[0], "Count": r[1]} for r in cursor.fetchall()])
-with col3:
-    with st.expander("💰 Top Earners"):
-        cursor.execute("SELECT Name, Occupation, Salary FROM Employees ORDER BY Salary DESC LIMIT 5")
+    with st.expander("💰 Top Earners with Companies"):
+        cursor.execute("""SELECT E.Name, E.Occupation, C.CompanyName, E.Salary 
+                         FROM Employees E 
+                         JOIN Departments D ON E.DepartmentID = D.DepartmentID 
+                         JOIN Companies C ON D.CompanyID = C.CompanyID 
+                         ORDER BY E.Salary DESC LIMIT 10""")
         cols = [d[0] for d in cursor.description]
         st.table([dict(zip(cols, row)) for row in cursor.fetchall()])
 
