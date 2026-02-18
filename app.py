@@ -6,9 +6,15 @@ from langchain_huggingface import HuggingFaceEndpoint
 from langchain.chains import create_sql_query_chain
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Create database if it doesn't exist
+if not Path("students.db").exists():
+    import create_database
+    create_database.create_database()
 
 # Page configuration
 st.set_page_config(
