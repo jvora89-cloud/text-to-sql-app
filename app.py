@@ -36,8 +36,13 @@ def init_database():
 def init_llm():
     """Initialize Hugging Face LLM"""
     # Get HF token from environment or Streamlit secrets
-    # On HF Spaces, the token is automatically available via HUGGINGFACE_TOKEN
-    hf_token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
+    # Check all possible environment variable names
+    hf_token = (
+        os.getenv("HF_TOKEN") or
+        os.getenv("HUGGINGFACE_TOKEN") or
+        os.getenv("HF_API_TOKEN") or
+        os.getenv("HUGGINGFACE_API_TOKEN")
+    )
 
     # Try to get from Streamlit secrets if available
     if not hf_token:
@@ -46,14 +51,19 @@ def init_llm():
         except:
             pass
 
+    # Debug: Show available env vars (remove in production)
+    # env_vars = [k for k in os.environ.keys() if 'HF' in k or 'HUGGING' in k or 'TOKEN' in k]
+    # if env_vars:
+    #     st.info(f"Available env vars with HF/TOKEN: {env_vars}")
+
     if not hf_token:
-        st.warning("⚠️ No HF token found. Trying with public API...")
+        st.info("ℹ️ No HF token detected. Using public Inference API (rate limited).")
 
     # Try multiple models in order of preference
     models_to_try = [
         ("mistralai/Mistral-7B-Instruct-v0.2", "Mistral-7B"),
-        ("HuggingFaceH4/zephyr-7b-beta", "Zephyr-7B"),
-        ("microsoft/Phi-3-mini-4k-instruct", "Phi-3-mini"),
+        ("google/flan-t5-large", "FLAN-T5-Large"),
+        ("tiiuae/falcon-7b-instruct", "Falcon-7B"),
     ]
 
     for model_id, model_name in models_to_try:
@@ -65,15 +75,17 @@ def init_llm():
                     max_new_tokens=200,
                     temperature=0.01,
                     huggingfacehub_api_token=hf_token,
-                    timeout=60
+                    timeout=90
                 )
                 st.success(f"✅ Using {model_name}")
                 return llm
         except Exception as e:
-            st.warning(f"Could not load {model_name}: {str(e)[:80]}...")
+            error_msg = str(e)
+            st.warning(f"❌ {model_name}: {error_msg[:100]}")
             continue
 
-    st.error("❌ All models failed. Please check HF Spaces status or try again later.")
+    st.error("❌ All models failed. The Inference API may be unavailable or rate limited.")
+    st.info("💡 Try again in a few minutes or check https://status.huggingface.co")
     return None
 
 # Create SQL query chain
