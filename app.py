@@ -35,14 +35,22 @@ def init_database():
 @st.cache_resource
 def init_llm():
     """Initialize Hugging Face LLM"""
+    # Get HF token from environment or Streamlit secrets
+    # On HF Spaces, the token is automatically available via HUGGINGFACE_TOKEN
+    hf_token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN")
+
+    # Try to get from Streamlit secrets if available
+    if not hf_token:
+        try:
+            hf_token = st.secrets.get("HF_TOKEN", None)
+        except:
+            pass
+
+    if not hf_token:
+        st.warning("⚠️ No HF token found. The app may not work properly.")
+        st.info("On Hugging Face Spaces, the token should be automatically available.")
+
     try:
-        # Get HF token from environment or Streamlit secrets
-        # On HF Spaces, the token is automatically available via HUGGINGFACE_TOKEN
-        hf_token = os.getenv("HUGGINGFACE_TOKEN") or os.getenv("HF_TOKEN") or st.secrets.get("HF_TOKEN", None)
-
-        if not hf_token:
-            st.warning("No HF token found. Using public API (may have rate limits).")
-
         llm = HuggingFaceEndpoint(
             repo_id="meta-llama/Meta-Llama-3-8B-Instruct",
             task="text-generation",
