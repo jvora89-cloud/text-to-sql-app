@@ -100,7 +100,7 @@ question = st.text_input(
 
 def generate_sql(user_question, token):
     """Generate SQL using HuggingFace API"""
-    url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+    url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3"
     headers = {"Authorization": f"Bearer {token}"} if token else {}
 
     full_prompt = f"""{SYSTEM_PROMPT}
