@@ -9,18 +9,16 @@ COPY requirements.txt .
 COPY app.py .
 COPY create_database.py .
 COPY README.md .
+COPY start.sh .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Make startup script executable
+RUN chmod +x start.sh
+
 # Expose Streamlit port (Hugging Face Spaces uses 7860)
 EXPOSE 7860
 
-# Create startup script that initializes database and starts Streamlit
-RUN echo '#!/bin/bash\n\
-python create_database.py\n\
-streamlit run app.py --server.port=7860 --server.address=0.0.0.0\n\
-' > /app/start.sh && chmod +x /app/start.sh
-
 # Start app
-CMD ["/bin/bash", "/app/start.sh"]
+CMD ["./start.sh"]
