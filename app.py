@@ -11,7 +11,7 @@ if not Path("business.db").exists():
 
 st.set_page_config(page_title="Text-to-SQL AI", page_icon="🤖", layout="wide")
 st.title("🤖 Text-to-SQL AI Agent")
-st.markdown("Ask business questions in natural language and get instant SQL results!")
+st.markdown("Ask questions about businesses across **8 industries** with **20+ occupations**!")
 
 HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
 
@@ -23,55 +23,79 @@ def get_db():
 conn = get_db()
 
 # System prompt for SQL generation
-SYSTEM_PROMPT = """You are a highly accurate and secure text-to-SQL AI agent. Your task is to translate natural language questions into valid, executable SQL queries for a SQLite database. Do not return any natural language explanations or extra text unless a query cannot be generated. Return only the SQL query itself.
+SYSTEM_PROMPT = """You are a highly accurate text-to-SQL AI agent. Translate natural language questions into valid SQL queries for a SQLite database. Return ONLY the SQL query with no explanations.
 
 # Database Schema
-The database has the following tables and columns:
 
-* `Employees` (`EmployeeID`: int, `Name`: text, `DepartmentID`: int, `Salary`: real)
-* `Departments` (`DepartmentID`: int, `DepartmentName`: text)
-* `Sales` (`SaleID`: int, `EmployeeID`: int, `ProductID`: int, `SaleDate`: text, `Amount`: real)
-* `Products` (`ProductID`: int, `ProductName`: text, `Category`: text)
+* `Companies` (`CompanyID`: int, `CompanyName`: text, `Industry`: text, `Location`: text)
+* `Departments` (`DepartmentID`: int, `DepartmentName`: text, `CompanyID`: int)
+* `Employees` (`EmployeeID`: int, `Name`: text, `Occupation`: text, `DepartmentID`: int, `Salary`: real, `HireDate`: text)
+* `Customers` (`CustomerID`: int, `CustomerName`: text, `Industry`: text, `ContactEmail`: text)
+* `Products` (`ProductID`: int, `ProductName`: text, `Category`: text, `Price`: real, `CompanyID`: int)
+* `Projects` (`ProjectID`: int, `ProjectName`: text, `CompanyID`: int, `Budget`: real, `StartDate`: text, `EndDate`: text, `Status`: text)
+* `Transactions` (`TransactionID`: int, `EmployeeID`: int, `CustomerID`: int, `ProductID`: int, `TransactionDate`: text, `Amount`: real)
+
+Industries: Technology, Healthcare, Finance, Education, Retail, Construction, Energy, Hospitality
 
 # Rules
-1. Use only the provided schema. Do not guess table or column names.
-2. Ensure all generated SQL is syntactically correct for SQLite.
-3. Prioritize joins over subqueries when possible.
-4. Do not use 'SELECT *'. Specify all necessary columns.
-5. If the user asks for data that is not available in the provided schema, respond with "Data not available in the current schema."
-6. Ensure queries are read-only and do not attempt to modify the database.
+1. Use only the provided schema
+2. Ensure syntactically correct SQLite queries
+3. Use JOINs when needed
+4. Specify columns (avoid SELECT *)
+5. Read-only queries only
+6. Return "Data not available" if schema doesn't support the question
 
 # Examples
 
-User Input: "How many employees are in the Sales department?"
-SQL Output: SELECT COUNT(E.EmployeeID) FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID WHERE D.DepartmentName = 'Sales';
+User: "How many employees work in Healthcare?"
+SQL: SELECT COUNT(E.EmployeeID) FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID JOIN Companies C ON D.CompanyID = C.CompanyID WHERE C.Industry = 'Healthcare';
 
-User Input: "What was the total sales amount in Q4 2024?"
-SQL Output: SELECT SUM(Amount) FROM Sales WHERE SaleDate >= '2024-10-01' AND SaleDate <= '2024-12-31';"""
+User: "What are the top 3 highest-paid occupations?"
+SQL: SELECT Occupation, AVG(Salary) as AvgSalary FROM Employees GROUP BY Occupation ORDER BY AvgSalary DESC LIMIT 3;"""
 
 with st.sidebar:
-    st.header("📊 Database Schema")
+    st.header("📊 Database Overview")
+
+    # Show stats
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM Companies")
+    companies_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(*) FROM Employees")
+    employees_count = cursor.fetchone()[0]
+    cursor.execute("SELECT COUNT(DISTINCT Industry) FROM Companies")
+    industries_count = cursor.fetchone()[0]
+
+    st.metric("Companies", companies_count)
+    st.metric("Employees", employees_count)
+    st.metric("Industries", industries_count)
+
+    st.markdown("---")
+    st.markdown("**Industries:**")
     st.markdown("""
-**Tables:**
-- **Employees**: EmployeeID, Name, DepartmentID, Salary
-- **Departments**: DepartmentID, DepartmentName
-- **Sales**: SaleID, EmployeeID, ProductID, SaleDate, Amount
-- **Products**: ProductID, ProductName, Category
+    - 💻 Technology
+    - 🏥 Healthcare
+    - 💰 Finance
+    - 📚 Education
+    - 🛒 Retail
+    - 🏗️ Construction
+    - ⚡ Energy
+    - 🍽️ Hospitality
     """)
 
     st.markdown("---")
     st.markdown("**Example Questions:**")
     st.markdown("""
-- How many employees are in Sales?
-- What was total sales in Q4 2024?
-- Who are the top 3 earners?
-- Show all Electronics sales
-- Average salary by department
+    - How many employees in Healthcare?
+    - Top 3 highest-paid occupations?
+    - Which company has most projects?
+    - Average salary by industry?
+    - Total transactions in 2024?
+    - List all Software Engineers
     """)
 
 question = st.text_input(
-    "Ask a business question:",
-    placeholder="e.g., What was the total sales amount in 2024?"
+    "🔍 Ask about any industry or occupation:",
+    placeholder="e.g., Which industries have the most employees?"
 )
 
 def generate_sql(user_question, token):
@@ -81,13 +105,13 @@ def generate_sql(user_question, token):
 
     full_prompt = f"""{SYSTEM_PROMPT}
 
-User Input: "{user_question}"
-SQL Output:"""
+User: "{user_question}"
+SQL:"""
 
     payload = {
         "inputs": full_prompt,
         "parameters": {
-            "max_new_tokens": 150,
+            "max_new_tokens": 200,
             "temperature": 0.1,
             "return_full_text": False
         }
@@ -100,11 +124,9 @@ SQL Output:"""
 
         if isinstance(result, list) and len(result) > 0:
             sql = result[0].get('generated_text', '')
-            # Clean up SQL
             sql = sql.strip()
             if '```' in sql:
                 sql = sql.split('```')[1].replace('sql', '').strip()
-            # Take only the first complete SQL statement
             sql = sql.split(';')[0].strip() + ';'
             return sql
         return None
@@ -112,62 +134,69 @@ SQL Output:"""
         st.error(f"⚠️ API Error: {str(e)[:100]}")
         return None
 
-if st.button("🔍 Generate SQL & Execute", type="primary"):
+if st.button("🚀 Generate SQL & Execute", type="primary"):
     if question:
-        with st.spinner("🤖 Generating SQL query..."):
+        with st.spinner("🤖 Generating SQL..."):
             sql_query = generate_sql(question, HF_TOKEN)
 
             if not sql_query:
-                st.warning("⚠️ No HF_TOKEN found. Using demo mode.")
-                sql_query = "SELECT D.DepartmentName, COUNT(E.EmployeeID) as EmployeeCount FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID GROUP BY D.DepartmentName;"
+                st.warning("⚠️ No HF_TOKEN. Using demo query.")
+                sql_query = "SELECT C.Industry, COUNT(E.EmployeeID) as EmployeeCount FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID JOIN Companies C ON D.CompanyID = C.CompanyID GROUP BY C.Industry ORDER BY EmployeeCount DESC;"
 
             if sql_query and "Data not available" not in sql_query:
-                st.subheader("📝 Generated SQL Query:")
+                st.subheader("📝 Generated SQL:")
                 st.code(sql_query, language="sql")
 
                 try:
-                    with st.spinner("⚡ Executing query..."):
+                    with st.spinner("⚡ Executing..."):
                         cursor = conn.cursor()
                         cursor.execute(sql_query)
                         results = cursor.fetchall()
 
-                        st.subheader("✅ Query Results:")
+                        st.subheader("✅ Results:")
                         if results:
                             st.success(f"Found {len(results)} result(s)!")
-
-                            # Display as table
                             cols = [d[0] for d in cursor.description]
                             data = [dict(zip(cols, row)) for row in results]
                             st.table(data)
                         else:
-                            st.info("Query executed successfully but returned no results.")
+                            st.info("Query executed but no results found.")
 
                 except Exception as e:
-                    st.error(f"❌ Query Error: {str(e)}")
-                    st.info("The generated SQL may have syntax errors. Try rephrasing your question.")
+                    st.error(f"❌ Error: {str(e)}")
+                    st.info("Try rephrasing your question.")
             else:
                 st.warning(sql_query if sql_query else "Could not generate SQL.")
     else:
-        st.warning("⚠️ Please enter a question first.")
+        st.warning("⚠️ Please enter a question.")
 
 # Sample data viewers
-col1, col2 = st.columns(2)
+st.markdown("---")
+st.subheader("📊 Quick Data Views")
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    with st.expander("👥 View Employees"):
+    with st.expander("🏢 Companies by Industry"):
         cursor = conn.cursor()
-        cursor.execute("SELECT E.EmployeeID, E.Name, D.DepartmentName, E.Salary FROM Employees E JOIN Departments D ON E.DepartmentID = D.DepartmentID LIMIT 5")
+        cursor.execute("SELECT Industry, COUNT(*) as Count FROM Companies GROUP BY Industry")
         results = cursor.fetchall()
-        cols = [d[0] for d in cursor.description]
-        st.table([dict(zip(cols, row)) for row in results])
+        st.table([{"Industry": r[0], "Count": r[1]} for r in results])
 
 with col2:
-    with st.expander("💰 View Recent Sales"):
+    with st.expander("💼 Top Occupations"):
         cursor = conn.cursor()
-        cursor.execute("SELECT S.SaleID, E.Name as Employee, P.ProductName, S.Amount, S.SaleDate FROM Sales S JOIN Employees E ON S.EmployeeID = E.EmployeeID JOIN Products P ON S.ProductID = P.ProductID ORDER BY S.SaleDate DESC LIMIT 5")
+        cursor.execute("SELECT Occupation, COUNT(*) as Count FROM Employees GROUP BY Occupation ORDER BY Count DESC LIMIT 5")
+        results = cursor.fetchall()
+        st.table([{"Occupation": r[0], "Count": r[1]} for r in results])
+
+with col3:
+    with st.expander("💰 Highest Salaries"):
+        cursor = conn.cursor()
+        cursor.execute("SELECT Name, Occupation, Salary FROM Employees ORDER BY Salary DESC LIMIT 5")
         results = cursor.fetchall()
         cols = [d[0] for d in cursor.description]
         st.table([dict(zip(cols, row)) for row in results])
 
 st.markdown("---")
-st.caption("🤖 Powered by AI | 🔒 Read-only queries for security")
+st.caption("🤖 AI-Powered SQL Generation | 🔒 Secure Read-Only Queries | 🌐 Multi-Industry Database")
