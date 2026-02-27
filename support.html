@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support - Text to SQL AI</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        h1 { color: #667eea; margin-top: 0; }
+        h2 { color: #764ba2; margin-top: 30px; }
+        .faq-item {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .faq-question {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .faq-answer {
+            color: #666;
+        }
+        .contact-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        .contact-box a {
+            color: white;
+            text-decoration: underline;
+        }
+        code {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Text to SQL AI - Support</h1>
+    <p>Welcome to the Text to SQL AI support page. Find answers to common questions and learn how to get help.</p>
+
+    <h2>Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+        <div class="faq-question">What is Text to SQL AI?</div>
+        <div class="faq-answer">
+            Text to SQL AI is an app that converts your natural language questions into SQL database queries using artificial intelligence. It's designed to make database queries accessible to everyone, even without SQL knowledge.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">Is my data private?</div>
+        <div class="faq-answer">
+            Yes! We don't store your queries permanently. Your questions are processed by AI to generate SQL, then discarded. Your consent preference is stored locally on your device. Read our <a href="privacy-policy.html" style="color: #667eea;">Privacy Policy</a> for details.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">Why does the app need AI consent?</div>
+        <div class="faq-answer">
+            Apple's 2026 App Store guidelines require apps that use AI to obtain explicit user consent before processing data. This ensures transparency about how your data is used.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">What database does the app use?</div>
+        <div class="faq-answer">
+            The app includes a demo database with 70 real companies from Fortune 500 and AI industries. It includes 7 tables: Companies, Departments, Employees, Customers, Products, Projects, and Transactions.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">Can I use my own database?</div>
+        <div class="faq-answer">
+            Currently, the app uses a fixed demo database. Custom database support may be added in future versions based on user feedback.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">The app won't load / shows an error</div>
+        <div class="faq-answer">
+            Try these troubleshooting steps:
+            <ol>
+                <li>Check your internet connection - the app requires internet to function</li>
+                <li>Force quit and restart the app</li>
+                <li>Make sure you've accepted the AI consent modal</li>
+                <li>Wait a few minutes - the backend service may be waking up</li>
+                <li>If the issue persists, contact support below</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">How do I reset my AI consent?</div>
+        <div class="faq-answer">
+            Delete and reinstall the app. Your consent preference is stored locally, so reinstalling will reset it and show the consent modal again.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">Example questions I can ask</div>
+        <div class="faq-answer">
+            <ul>
+                <li>"Show me all technology companies"</li>
+                <li>"Which company has the most employees?"</li>
+                <li>"List all employees in the Engineering department"</li>
+                <li>"What are the total transactions by company?"</li>
+                <li>"Show customers from California"</li>
+                <li>"Which products cost more than $500?"</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">Which AI service does the app use?</div>
+        <div class="faq-answer">
+            The app uses Hugging Face's AI inference API with models like Mistral-7B. Your queries are processed through Hugging Face's servers to generate SQL queries.
+        </div>
+    </div>
+
+    <div class="faq-item">
+        <div class="faq-question">Does the app work offline?</div>
+        <div class="faq-answer">
+            No, an internet connection is required because the app loads its interface from Hugging Face Spaces and uses AI processing that requires network access.
+        </div>
+    </div>
+
+    <h2>Still Need Help?</h2>
+
+    <div class="contact-box">
+        <h3 style="margin-top: 0;">Contact Support</h3>
+        <p>If you can't find the answer to your question, we're here to help!</p>
+        <p><strong>Email:</strong> <a href="mailto:support@texttosql.app">support@texttosql.app</a></p>
+        <p><strong>GitHub Issues:</strong> <a href="https://github.com/jvora89-cloud/text-to-sql-app/issues">Report a Bug</a></p>
+        <p style="margin-bottom: 0; font-size: 14px;">Response time: Usually within 24-48 hours</p>
+    </div>
+
+    <h2>App Information</h2>
+    <ul>
+        <li><strong>Version:</strong> 1.0.0</li>
+        <li><strong>Developer:</strong> Jay Vora</li>
+        <li><strong>Category:</strong> Developer Tools</li>
+        <li><strong>Requirements:</strong> iOS 13.0 or later, Internet connection</li>
+    </ul>
+
+    <h2>Useful Links</h2>
+    <ul>
+        <li><a href="privacy-policy.html">Privacy Policy</a></li>
+        <li><a href="https://github.com/jvora89-cloud/text-to-sql-app">Source Code on GitHub</a></li>
+        <li><a href="https://huggingface.co/spaces/Jayyvora/text-to-sql-app">Live Demo (Web Version)</a></li>
+    </ul>
+
+    <hr style="margin: 40px 0; border: none; border-top: 1px solid #ddd;">
+
+    <p style="text-align: center; color: #666; font-size: 14px;">
+        Text to SQL AI &copy; 2026<br>
+        Made with ❤️ for developers
+    </p>
+</body>
+</html>

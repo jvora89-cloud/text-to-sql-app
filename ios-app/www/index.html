@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content:;">
-    <title>Text to SQL</title>
+    <title>Text to SQL AI</title>
     <style>
         * {
             margin: 0;
@@ -19,6 +19,106 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
+        /* AI Consent Modal - 2026 App Store Requirement */
+        #ai-consent-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            padding: 20px;
+        }
+
+        #ai-consent-modal.hidden {
+            display: none;
+        }
+
+        .consent-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .consent-content h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .consent-content .ai-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .consent-content p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 15px;
+        }
+
+        .consent-content ul {
+            text-align: left;
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        .consent-content li {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .consent-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .consent-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .consent-accept {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .consent-decline {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .privacy-link {
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .privacy-link a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        /* Loading Screen */
         #loading {
             position: fixed;
             top: 0;
@@ -32,6 +132,10 @@
             justify-content: center;
             color: white;
             z-index: 9999;
+        }
+
+        #loading.hidden {
+            display: none;
         }
 
         .loader {
@@ -68,10 +172,45 @@
     </style>
 </head>
 <body>
+    <!-- AI Consent Modal (2026 App Store Requirement) -->
+    <div id="ai-consent-modal">
+        <div class="consent-content">
+            <div class="ai-badge">🤖 AI-Powered App</div>
+            <h2>AI Data Processing Notice</h2>
+            <p>This app uses artificial intelligence to convert your questions into SQL queries.</p>
+
+            <ul>
+                <li>✓ Your text queries are processed by AI to generate SQL</li>
+                <li>✓ Data transmitted to Hugging Face (third-party AI service)</li>
+                <li>✓ Query content is not stored permanently on our servers</li>
+                <li>✓ Your data is not used to train or improve AI models</li>
+                <li>✓ No personal information (name, email, etc.) is collected</li>
+            </ul>
+
+            <p style="font-size: 13px; color: #999; margin-bottom: 5px;">By continuing, you consent to:</p>
+            <ul style="font-size: 13px; color: #999; margin-top: 0;">
+                <li>AI processing of your database queries</li>
+                <li>Data transmission to third-party AI services</li>
+                <li>Terms outlined in our Privacy Policy</li>
+            </ul>
+
+            <div class="consent-buttons">
+                <button class="consent-btn consent-decline" onclick="declineConsent()">Decline</button>
+                <button class="consent-btn consent-accept" onclick="acceptConsent()">Accept & Continue</button>
+            </div>
+
+            <div class="privacy-link">
+                <a href="https://jvora89-cloud.github.io/text-to-sql-app/privacy-policy.html" target="_blank">Privacy Policy</a> |
+                <a href="https://jvora89-cloud.github.io/text-to-sql-app/support.html" target="_blank">Support</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
     <div id="loading">
         <div class="loader"></div>
-        <h2>Text to SQL</h2>
-        <p>Loading...</p>
+        <h2>Text to SQL AI</h2>
+        <p>Loading AI-powered database assistant...</p>
     </div>
 
     <div id="error" class="error-message">
@@ -89,28 +228,50 @@
         const iframe = document.getElementById('app-frame');
         const loading = document.getElementById('loading');
         const error = document.getElementById('error');
+        const consentModal = document.getElementById('ai-consent-modal');
 
-        let loadTimeout = setTimeout(() => {
-            loading.style.display = 'none';
-            error.style.display = 'block';
-        }, 30000); // 30 second timeout
+        // Check if user has already consented
+        const hasConsented = localStorage.getItem('ai-consent') === 'true';
 
-        iframe.onload = function() {
-            clearTimeout(loadTimeout);
-            loading.style.display = 'none';
-            iframe.classList.add('loaded');
-        };
+        if (hasConsented) {
+            consentModal.classList.add('hidden');
+            loadApp();
+        }
 
-        // Handle network errors
-        window.addEventListener('offline', () => {
-            loading.style.display = 'none';
-            error.style.display = 'block';
-        });
+        function acceptConsent() {
+            localStorage.setItem('ai-consent', 'true');
+            localStorage.setItem('ai-consent-date', new Date().toISOString());
+            consentModal.classList.add('hidden');
+            loadApp();
+        }
 
-        window.addEventListener('online', () => {
-            error.style.display = 'none';
-            location.reload();
-        });
+        function declineConsent() {
+            alert('This app requires AI processing to function. You can review our Privacy Policy for more details.');
+        }
+
+        function loadApp() {
+            let loadTimeout = setTimeout(() => {
+                loading.classList.add('hidden');
+                error.style.display = 'block';
+            }, 30000); // 30 second timeout
+
+            iframe.onload = function() {
+                clearTimeout(loadTimeout);
+                loading.classList.add('hidden');
+                iframe.classList.add('loaded');
+            };
+
+            // Handle network errors
+            window.addEventListener('offline', () => {
+                loading.classList.add('hidden');
+                error.style.display = 'block';
+            });
+
+            window.addEventListener('online', () => {
+                error.style.display = 'none';
+                location.reload();
+            });
+        }
     </script>
 </body>
 </html>
