@@ -1,5 +1,8 @@
 import streamlit as st
 import os
+import sqlite3
+import uuid
+from datetime import datetime
 from dotenv import load_dotenv
 from langchain_community.utilities import SQLDatabase
 from langchain_huggingface import HuggingFaceEndpoint
@@ -9,6 +12,75 @@ from langchain_core.prompts import PromptTemplate
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Initialize session ID for tracking user sessions
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = str(uuid.uuid4())
+
+# Training data collection functions
+def log_query(user_query, generated_sql, execution_success, execution_result, error_message, model_used):
+    """Log query to training database"""
+    try:
+        conn = sqlite3.connect('training_data.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO query_logs
+            (user_query, generated_sql, execution_success, execution_result, error_message, session_id, model_used)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (user_query, generated_sql, execution_success, execution_result, error_message,
+              st.session_state.session_id, model_used))
+        query_log_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return query_log_id
+    except Exception as e:
+        st.warning(f"Could not log query for training: {e}")
+        return None
+
+def save_feedback(query_log_id, feedback_type, corrected_sql=None, comment=None):
+    """Save user feedback to training database"""
+    try:
+        conn = sqlite3.connect('training_data.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO user_feedback
+            (query_log_id, feedback_type, corrected_sql, feedback_comment)
+            VALUES (?, ?, ?, ?)
+        ''', (query_log_id, feedback_type, corrected_sql, comment))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        st.error(f"Could not save feedback: {e}")
+        return False
+
+def get_training_stats():
+    """Get training data statistics"""
+    try:
+        conn = sqlite3.connect('training_data.db')
+        cursor = conn.cursor()
+
+        cursor.execute('SELECT COUNT(*) FROM query_logs')
+        total_queries = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM user_feedback WHERE feedback_type = "positive"')
+        positive_feedback = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM user_feedback WHERE feedback_type = "negative"')
+        negative_feedback = cursor.fetchone()[0]
+
+        cursor.execute('SELECT COUNT(*) FROM verified_examples')
+        verified_examples = cursor.fetchone()[0]
+
+        conn.close()
+        return {
+            'total_queries': total_queries,
+            'positive_feedback': positive_feedback,
+            'negative_feedback': negative_feedback,
+            'verified_examples': verified_examples
+        }
+    except Exception as e:
+        return None
 
 # Page configuration
 st.set_page_config(
@@ -147,6 +219,23 @@ if db and llm:
 - List all grades for Alice Johnson
         """)
 
+        st.markdown("---")
+        st.header("🤖 AI Training Stats")
+        training_stats = get_training_stats()
+        if training_stats:
+            st.metric("Total Queries", training_stats['total_queries'])
+            st.metric("👍 Positive Feedback", training_stats['positive_feedback'])
+            st.metric("👎 Negative Feedback", training_stats['negative_feedback'])
+            st.metric("✅ Verified Examples", training_stats['verified_examples'])
+
+            if training_stats['total_queries'] > 0:
+                accuracy_rate = (training_stats['positive_feedback'] /
+                               (training_stats['positive_feedback'] + training_stats['negative_feedback'])) * 100 if (training_stats['positive_feedback'] + training_stats['negative_feedback']) > 0 else 0
+                st.progress(accuracy_rate / 100)
+                st.caption(f"User Satisfaction: {accuracy_rate:.1f}%")
+        else:
+            st.info("No training data yet. Use the app and provide feedback!")
+
     # Main interface
     question = st.text_input(
         "Enter your question:",
@@ -156,6 +245,12 @@ if db and llm:
     if st.button("Generate SQL & Execute", type="primary"):
         if question:
             with st.spinner("Generating SQL query..."):
+                execution_success = False
+                error_message = None
+                result = None
+                sql_query = None
+                query_log_id = None
+
                 try:
                     # Generate SQL query
                     sql_query = chain.invoke({
@@ -177,18 +272,85 @@ if db and llm:
 
                     # Execute query
                     with st.spinner("Executing query..."):
-                        result = db.run(sql_query)
+                        try:
+                            result = db.run(sql_query)
+                            execution_success = True
 
-                        st.subheader("Query Results:")
-                        if result:
-                            st.success("Query executed successfully!")
-                            st.text(result)
-                        else:
-                            st.info("Query executed but returned no results.")
+                            st.subheader("Query Results:")
+                            if result:
+                                st.success("Query executed successfully!")
+                                st.text(result)
+                            else:
+                                st.info("Query executed but returned no results.")
+                        except Exception as exec_error:
+                            execution_success = False
+                            error_message = str(exec_error)
+                            st.error(f"Query execution failed: {error_message}")
+
+                    # Log query for training
+                    query_log_id = log_query(
+                        user_query=question,
+                        generated_sql=sql_query,
+                        execution_success=1 if execution_success else 0,
+                        execution_result=str(result) if result else None,
+                        error_message=error_message,
+                        model_used="mistral-7b"
+                    )
+
+                    # Feedback UI
+                    if query_log_id:
+                        st.markdown("---")
+                        st.subheader("🤖 Help Train Our AI")
+                        st.write("Was this SQL query correct? Your feedback helps improve the AI!")
+
+                        col1, col2, col3 = st.columns([1, 1, 3])
+
+                        with col1:
+                            if st.button("👍 Correct", key=f"positive_{query_log_id}"):
+                                if save_feedback(query_log_id, "positive"):
+                                    st.success("✅ Thanks! Your feedback helps train better AI models.")
+                                    # Store in session to avoid duplicate submissions
+                                    if 'feedback_submitted' not in st.session_state:
+                                        st.session_state.feedback_submitted = set()
+                                    st.session_state.feedback_submitted.add(query_log_id)
+
+                        with col2:
+                            if st.button("👎 Incorrect", key=f"negative_{query_log_id}"):
+                                if save_feedback(query_log_id, "negative"):
+                                    st.warning("📝 Thanks for the feedback! This will help improve the model.")
+                                    if 'feedback_submitted' not in st.session_state:
+                                        st.session_state.feedback_submitted = set()
+                                    st.session_state.feedback_submitted.add(query_log_id)
+
+                        with col3:
+                            with st.expander("✏️ Provide Correction (Optional)"):
+                                corrected_sql = st.text_area(
+                                    "Enter the correct SQL:",
+                                    value=sql_query,
+                                    key=f"correction_{query_log_id}"
+                                )
+                                feedback_comment = st.text_input(
+                                    "Comment (optional):",
+                                    key=f"comment_{query_log_id}"
+                                )
+                                if st.button("Submit Correction", key=f"submit_{query_log_id}"):
+                                    if save_feedback(query_log_id, "correction", corrected_sql, feedback_comment):
+                                        st.success("✅ Correction submitted! This is valuable training data.")
 
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
                     st.info("Try rephrasing your question or check if the database exists.")
+
+                    # Log failed query
+                    if sql_query:
+                        log_query(
+                            user_query=question,
+                            generated_sql=sql_query or "GENERATION_FAILED",
+                            execution_success=0,
+                            execution_result=None,
+                            error_message=str(e),
+                            model_used="mistral-7b"
+                        )
         else:
             st.warning("Please enter a question first.")
 

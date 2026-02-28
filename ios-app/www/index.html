@@ -175,24 +175,38 @@
     <!-- AI Consent Modal (2026 App Store Requirement) -->
     <div id="ai-consent-modal">
         <div class="consent-content">
-            <div class="ai-badge">🤖 AI-Powered App</div>
-            <h2>AI Data Processing Notice</h2>
-            <p>This app uses artificial intelligence to convert your questions into SQL queries.</p>
+            <div class="ai-badge">🤖 AI-Powered App with Training</div>
+            <h2>AI Data Collection & Training Notice</h2>
+            <p><strong>IMPORTANT:</strong> This app uses AI to process your queries AND collects your data to train and improve AI models.</p>
 
+            <h3 style="font-size: 16px; margin: 15px 0 10px 0; color: #333;">What We Collect:</h3>
             <ul>
                 <li>✓ Your text queries are processed by AI to generate SQL</li>
+                <li>✓ Queries and generated SQL are <strong>STORED FOR AI TRAINING</strong></li>
+                <li>✓ Your feedback (thumbs up/down) is collected to improve accuracy</li>
                 <li>✓ Data transmitted to Hugging Face (third-party AI service)</li>
-                <li>✓ Query content is not stored permanently on our servers</li>
-                <li>✓ Your data is not used to train or improve AI models</li>
-                <li>✓ No personal information (name, email, etc.) is collected</li>
+                <li>✓ Anonymous session tracking (no personal information)</li>
             </ul>
 
-            <p style="font-size: 13px; color: #999; margin-bottom: 5px;">By continuing, you consent to:</p>
-            <ul style="font-size: 13px; color: #999; margin-top: 0;">
-                <li>AI processing of your database queries</li>
-                <li>Data transmission to third-party AI services</li>
+            <h3 style="font-size: 16px; margin: 15px 0 10px 0; color: #333;">What We DON'T Collect:</h3>
+            <ul>
+                <li>✓ No personal information (name, email, phone)</li>
+                <li>✓ No location data</li>
+                <li>✓ No device identifiers</li>
+            </ul>
+
+            <p style="font-size: 13px; color: #666; margin: 15px 0 5px 0; font-weight: 600;">By clicking "Accept & Continue", you consent to:</p>
+            <ul style="font-size: 13px; color: #666; margin-top: 0;">
+                <li><strong>AI processing</strong> of your database queries</li>
+                <li><strong>Data storage</strong> of your queries for AI training</li>
+                <li><strong>Data transmission</strong> to third-party AI services</li>
+                <li><strong>Indefinite retention</strong> of anonymous training data</li>
                 <li>Terms outlined in our Privacy Policy</li>
             </ul>
+
+            <p style="font-size: 12px; color: #999; margin-top: 15px;">
+                You can opt-out or request data deletion. See Privacy Policy for details.
+            </p>
 
             <div class="consent-buttons">
                 <button class="consent-btn consent-decline" onclick="declineConsent()">Decline</button>
